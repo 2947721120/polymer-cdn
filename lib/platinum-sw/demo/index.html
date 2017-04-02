@@ -11,9 +11,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Platinum Service Worker Elements Demo</title>
+    <title>白金服务工作者元素演示</title>
 
-    <script src="../../fetch/fetch.js"></script>
+    <script src=" fetch/fetch.js"></script>
     <script src="../../webcomponentsjs/webcomponents-lite.min.js"></script>
     <link rel="import" href="../platinum-sw-elements.html">
     <link rel="import" href="../../marked-element/marked-element.html">
@@ -29,21 +29,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                            precache="{{precacheList}}"></platinum-sw-cache>
       </platinum-sw-register>
 
-      <h1>Platinum Service Worker Elements Demo</h1>
-      <p>This is a simple offline-capable eBook reader.</p>
+      <h1>白金服务工作者元素演示</h1>
+      <p>这是一个简单的离线功能的电子书阅读器.</p>
       <p>
-        On browsers that support service workers, this page itself and all the books are all
-        available offline, by virtue of the <code>&lt;platinum-sw-register></code> and
-        <code>&lt;platinum-sw-cache></code> elements.
+        在支持服务工作者的浏览器上，这个页面本身和所有的书都是
+         可离线使用，凭借 <code>&lt;platinum-sw-register></code> 和 
+        <code>&lt;platinum-sw-cache></code> 元素.
       </p>
       <p>
-        Service workers are meant to be a progressive enhancement, and browsers that lack service
-        worker support will still have a functional (online-only) eBook reader.
+        服务人员的意图是逐步提升，缺乏服务的浏览器
+         工作人员的支持仍将具有功能（仅在线）电子书阅读器.
       </p>
 
       <template is="dom-if" if="[[state]]">
         <select on-change="selectBook">
-          <option disabled selected>Select a Book...</option>
+          <option disabled selected>选择一本书...</option>
           <template is="dom-repeat" id="books" items="[[books]]">
             <option>{{item.title}}</option>
           </template>
@@ -57,13 +57,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       var t = document.querySelector('#page-template');
 
       t.books = [{
-        title: 'Don Quixote',
+        title: '唐吉诃德',
         url: 'https://cdn.rawgit.com/GITenberg/Don-Quixote_996/master/996.txt'
       }, {
-        title: 'Dubliners',
+        title: '都柏林人',
         url: 'https://cdn.rawgit.com/GITenberg/Dubliners_2814/master/2814.txt'
       }, {
-        title: 'Pride & Prejudice',
+        title: '傲慢与偏见',
         url: 'https://cdn.rawgit.com/GITenberg/Pride-and-Prejudice_1342/master/1342.txt'
       }];
 
@@ -82,8 +82,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       };
 
       window.addEventListener('WebComponentsReady', function() {
-        // Explicitly call the register() method. We need to wait until the template's variables are
-        // all set first, since the configuration depends on bound variables.
+        // 明确地调用register（）方法。 我们需要等到模板的变量
+         //所有设置首先，因为配置依赖于绑定变量。
         document.querySelector('platinum-sw-register').register();
       });
     </script>

@@ -146,14 +146,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       var input, ironInput;
 
       function pretendToTypeACharacter(input, text, caret) {
-        // When typing a character in an input, the browser natively advances
-        // the caret from its original location.
-        ironInput.value = text;
+//在输入中输入一个字符时，浏览器会自动进行
+         //从其原始位置的插入符号。
+         ironInput.value = text;
         ironInput.selectionStart = ironInput.selectionEnd =  caret + 1;
 
-        // Since imperatively setting the input value does not fire an event.
-        // The user typing the value would, so manually fire the update.
-        input.value = text;
+//由于强制设置输入值不会触发事件。
+         //键入值的用户将手动触发更新。
+         input.value = text;
       }
 
       function pretendToDeleteACharacter(input, text, caret) {

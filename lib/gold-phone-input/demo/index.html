@@ -15,7 +15,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
 
-  <title>gold-phone-input demo</title>
+  <title>金手机输入演示</title>
 
   <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="../gold-phone-input.html">
@@ -23,26 +23,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 </head>
 <body unresolved>
   <div class="vertical-section-container centered">
-    <h4>Standard</h4>
+    <h4>标准</h4>
     <div class="vertical-section">
       <gold-phone-input></gold-phone-input>
-      <gold-phone-input auto-validate required label="Auto-validating"></gold-phone-input>
+      <gold-phone-input auto-validate required label="自动验证"></gold-phone-input>
       <gold-phone-input
-          label="France phone number"
+          label="法国电话号码"
           country-code="33"
           phone-number-pattern="X-XX-XX-XX-XX"
           auto-validate>
       </gold-phone-input>
     </div>
 
-    <h4>Pre-validated</h4>
+    <h4>预先验证</h4>
     <div class="vertical-section">
       <gold-phone-input country-code="44" auto-validate required></gold-phone-input>
       <gold-phone-input label="Valid US number" value="415-111-1111" auto-validate></gold-phone-input>
       <gold-phone-input label="Invalid US number" value="415-111-111" auto-validate></gold-phone-input>
     </div>
 
-    <h4>Custom error message, auto-validates on blur</h4>
+    <h4>自定义错误消息，自动验证模糊</h4>
     <div class="vertical-section">
       <gold-phone-input auto-validate label="Cats only" error-message="needs more cats" required></gold-phone-input>
     </div>
