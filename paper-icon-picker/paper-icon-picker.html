@@ -1,0 +1,276 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-meta/iron-meta.html">
+<link rel="import" href="paper-icon-picker-icon.html">
+
+<!--
+这是一个简单的图标选择器元素，可以让您选择一个
+的材料设计图标从可用色板的列表.
+
+示例:
+
+    <paper-icon-picker></paper-icon-picker>
+
+    <paper-icon-picker icon="{{selectedIcon}}"></paper-icon-picker>
+
+您可以使用“iconList”数组配置正在使用的图标调色板
+`columnCount`属性，它指定了多少个"generic" “通用”图标（即列）
+在选择器中要显示.
+
+    <paper-icon-picker column-count=5 icon-list='["icons:cloud", "icons:face", "icons:work", "icons:pets", "icons:perm-contact-calendar"]'></paper-icon-picker>
+
+### 造型
+
+以下自定义属性和混合可用于样式:
+
+自定义属性 | 描述 | 默认
+----------------|-------------|----------
+`--paper-icon-picker-icon-size` | 每个图标框的大小 | `26px`
+`--paper-icon-picker-size` | 图标选择器的大小 | `24px`
+
+@element paper-icon-picker
+@demo demo/index.html
+-->
+
+<dom-module id="paper-icon-picker">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+      }
+
+      :host(:focus) {
+        outline: none;
+      }
+
+      .icon {
+        box-sizing: border-box;
+        width: var(--paper-icon-picker-icon-size, 26px);
+        height: var(--paper-icon-picker-icon-size, 26px);
+        display: inline-block;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        font-size: 0;
+        position: relative;
+      }
+
+      /* 如果我们只是在盘旋时缩放纸张，那么最终会出现这种情况
+        *将滚动条添加到难以摆脱的纸张列表框中。
+        *一个简单的解决方法是使用：after伪元素. */
+      .icon:after {
+        @apply(--layout-fit);
+        content: '';
+        -webkit-transition: -webkit-transform 0.2s;
+        transition: transform .2s;
+        z-index: 0;
+      }
+
+      .icon:hover:after, .icon:focus:after {
+        -webkit-transform: scale(1.3, 1.3);
+        transform: scale(1.3, 1.3);
+        outline: none;
+        z-index: 1;
+      }
+
+      paper-item {
+        --paper-item: {
+          margin: 0;
+          padding: 0;
+          min-height: 0;
+        };
+
+        --paper-item-focused-before: {
+          opacity: 0;
+        };
+      }
+
+      paper-listbox {
+        padding: 0;
+        font-size: 0;
+        overflow: hidden;
+        @apply(--layout-vertical);
+        @apply(--layout-wrap);
+      }
+    </style>
+
+    <iron-meta type="iconset" list="{{iconsets}}"></iron-meta>
+    <paper-menu-button vertical-align="[[verticalAlign]]" horizontal-align="[[horizontalAlign]]">
+      <paper-icon-button
+          id="iconButton"
+          icon="swatch:perm-media"
+          class="dropdown-trigger" alt="图标 挑选"
+          noink$="[[noink]]">
+      </paper-icon-button>
+      <paper-listbox class="dropdown-content" id="container">
+        <template is="dom-repeat" items="{{iconList}}">
+          <paper-item class="icon">
+            <iron-icon icon="[[item]]"></iron-icon>
+          </paper-item>
+        </template>
+      </paper-listbox>
+    </paper-menu-button>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'paper-icon-picker',
+
+      hostAttributes: {
+        'tabindex': 0
+      },
+
+      listeners: {
+        'paper-dropdown-open': '_onOpen',
+        'iron-select': '_onIconTap'
+      },
+
+      /**
+       * 当图标被选中时触发
+       *
+       * @event icon-picker-selected
+       */
+
+      properties: {
+        /**
+         *所选图标，如字符串(即 'icons:add-box').
+         * value.
+         */
+        icon: {
+          type: String,
+          notify: true,
+          observer: '_iconChanged'
+        },
+
+        /**
+         * 要显示的图标。 默认情况下，这些是材料设计
+          *图标.
+         */
+        iconList: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+
+        /**
+         * 在选择器中显示的图标数量。
+          *材质设计调色板有18个图标
+         */
+        columnCount: {
+          type: Number,
+          value: 18
+        },
+
+        /**
+         *对齐菜单下拉菜单的方向
+          *水平相对于下拉式触发。
+         */
+        horizontalAlign: {
+          type: String,
+          value: 'left',
+          reflectToAttribute: true
+        },
+
+        /**
+         * 对齐菜单下拉菜单的方向
+          *垂直相对于下拉式触发.
+         */
+        verticalAlign: {
+          type: String,
+          value: 'top',
+          reflectToAttribute: true
+        },
+
+        /**
+         *如果为真，图标选择器按钮在交互时不会产生涟漪效应
+          *通过指针.
+         */
+        noink: {
+          type: Boolean
+        }
+      },
+
+      created: function() {
+       //注意：除非菜单是，否则我们不会实际渲染这些图标框
+         //实际上是轻拍
+        this._renderedIcons = false;
+      },
+
+      attached: function() {
+        if (this.iconList.length === 0 && this.iconsets && this.iconsets.length) {
+          var iconList = [];
+          this.iconsets.forEach(function(item){
+            item.getIconNames().forEach(function(icon){
+              iconList.push(icon);
+            });
+          });
+          this.set('iconList', iconList);
+        }
+     //将图标框放在列中。 我们首先需要得到宽度
+         //图标框（可自定义），然后更改框
+         //宽度适合所有的列。
+        var sizeOfAIconDiv = this.getComputedStyleValue('--paper-icon-picker-icon-size');
+        if (!sizeOfAIconDiv || sizeOfAIconDiv == '') {  // Default value case
+          sizeOfAIconDiv = 26;
+        } else {
+          sizeOfAIconDiv = sizeOfAIconDiv.replace('px', '');
+        }
+
+        var rowCount = Math.round(this.iconList.length / this.columnCount);
+        this.$.container.style.height = rowCount * sizeOfAIconDiv + 'px';
+        this.$.container.style.width = this.columnCount * sizeOfAIconDiv + 'px';
+      },
+
+      _onOpen: function() {
+        //如果还没有，请填写图标。
+        if (this._renderedIcons) {
+          return;
+        }
+
+        this._renderedIcons = true;
+      },
+
+      _addOverflowClass: function() {
+        this.$.container.toggleClass('opened', true);
+      },
+
+      _removeOverflowClass: function() {
+        this.$.container.toggleClass('opened', false);
+      },
+
+      _onIconTap: function(event) {
+        var item = event.detail.item;
+        var icon = item.querySelector('iron-icon').icon;
+
+        // 如果是rgb格式，请先转换。
+        this.icon = icon;
+        this.fire('icon-picker-selected', {icon: this.icon});
+      },
+
+      _iconChanged: function() {
+        if (this.icon) {
+          this.$.iconButton.icon = this.icon;
+        } else {
+          this.$.iconButton.icon = 'swatch:perm-media';
+        }
+      },
+    });
+  </script>
+</dom-module>
