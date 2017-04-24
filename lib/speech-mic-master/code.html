@@ -1,0 +1,20 @@
+ Polymer({
+
+      is: 'speech-mic',
+      properties: {
+        recognizing:{
+          type:Boolean,
+          readOnly:true,
+          notify:true,
+          value:false
+        },
+    completeTranscript:{
+          type:String,
+          readOnly:true,
+          notify:true
+        },
+            transcript:{
+          type:String,
+          readOnly:true,
+          notify:true
+        },

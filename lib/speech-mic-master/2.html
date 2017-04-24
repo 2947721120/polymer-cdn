@@ -1,0 +1,791 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`speech-mic`是一个简单的实现网络语音 API的 (https://dvcs.w3.org/hg/speech-api/raw-file/tip/speechapi.html) 聚合物的 1.4+ .
+
+它提供了一个简单的文字识别。中期业绩不与发行.
+
+图标，布局和CSS完全是出于 https://github.com/PolymerLabs/speech-mic 公认
+
+
+@demo demo/index.html 
+-->
+
+<dom-module id="speech-mic">
+  <template>
+    <style>
+
+      :host {
+        display: inline-block;
+        position: relative;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+      }
+
+      .mic-container {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      .mic-container.recognizing {
+        z-index: 10;
+      }
+
+      .icon {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+      }
+
+      .icon > svg {
+        display: block;
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 24px;
+        height: 24px;
+        pointer-events: none;
+      }
+
+      .recognizing > .icon {
+        background-color: #d23f31;
+        fill: #fff;
+        box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+      }
+
+      .ring {
+        display: none;
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        border-radius: 100%;
+      }
+
+      .recognizing > .ring {
+        display: block;
+        background-color: rgba(0, 0, 0, 0.1);
+        -webkit-animation: ring 1.2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+      }
+
+      @-webkit-keyframes ring {
+        0% {
+          -webkit-transform: scale(0.5);
+        }
+        40% {
+          -webkit-transform: scale(0.8);
+        }
+        100% {
+          -webkit-transform: scale(1);
+        }
+      }
+
+      .ring2 {
+        display: none;
+        position: absolute;
+        top: -100%;
+        left: -100%;
+        width: 300%;
+        height: 300%;
+        border-radius: 100%;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+      }
+
+      .recognizing > .ring2 {
+        display: block;
+        -webkit-animation: ring2 1.5s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+      }
+
+      @-webkit-keyframes ring2 {
+        0% {
+          -webkit-transform: scale(0.3);
+        }
+        40% {
+          -webkit-transform: scale(0.5);
+        }
+        100% {
+          -webkit-transform: scale(1);
+        }
+      }
+    </style>
+     <style>
+.paper {
+  height: 300px;
+  width: 300px;
+  position: relative;
+  background: #fff;
+}
+
+.logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+.logo div {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 33.33333px;
+  width: 33.33333px;
+  border-radius: 16.66667px;
+  background-color: currentColor;
+  -webkit-transform: translate(-50%, -50%) scale(0);
+          transform: translate(-50%, -50%) scale(0);
+}
+.logo ._1, .logo ._2, .logo ._3, .logo ._4 {
+  -webkit-animation-duration: 0.5s, 1.5s, 0.2s, 1.5s;
+          animation-duration: 0.5s, 1.5s, 0.2s, 1.5s;
+  -webkit-animation-timing-function: ease-in-out, ease-out, ease-in, linear;
+          animation-timing-function: ease-in-out, ease-out, ease-in, linear;
+  -webkit-animation-fill-mode: forwards,forwards,forwards,forwards;
+          animation-fill-mode: forwards,forwards,forwards,forwards;
+ /* -webkit-animation-iteration-count: 3,2,1,infinite;
+          animation-iteration-count: 3,2,1,infinite;*/
+}
+.logo ._1 {
+  -webkit-animation-delay: 0s, 1.5s, 5.625s, 5.825s;
+          animation-delay: 0s, 1.5s, 5.625s, 5.825s;
+}
+.logo ._2 {
+  -webkit-animation-delay: 0.0625s, 1.5625s, 5.3125s, 5.5125s;
+          animation-delay: 0.0625s, 1.5625s, 5.3125s, 5.5125s;
+}
+.logo ._3 {
+  -webkit-animation-delay: 0.125s, 1.625s, 5s, 5.2s;
+          animation-delay: 0.125s, 1.625s, 5s, 5.2s;
+}
+.logo ._4 {
+  -webkit-animation-delay: 0.1875s, 1.6875s, 4.6875s, 4.8875s;
+          animation-delay: 0.1875s, 1.6875s, 4.6875s, 4.8875s;
+}
+.logo ._1 {
+  -webkit-transform: translate(-50%, -50%) translateX(-300%) scale(1);
+          transform: translate(-50%, -50%) translateX(-300%) scale(1);
+  color: #4285f4;
+  -webkit-animation-name: listening, user-speaks_1, to_thinking, thinking;
+          animation-name: listening, user-speaks_1, to_thinking, thinking;
+}
+.logo ._2 {
+  -webkit-transform: translate(-50%, -50%) translateX(-100%) scale(1);
+          transform: translate(-50%, -50%) translateX(-100%) scale(1);
+  color: #db4437;
+  -webkit-animation-name: listening, user-speaks_2, to_thinking, thinking;
+          animation-name: listening, user-speaks_2, to_thinking, thinking;
+}
+.logo ._3 {
+  -webkit-transform: translate(-50%, -50%) translateX(100%) scale(1);
+          transform: translate(-50%, -50%) translateX(100%) scale(1);
+  color: #f4b400;
+  -webkit-animation-name: listening, user-speaks_3, to_thinking, thinking;
+          animation-name: listening, user-speaks_3, to_thinking, thinking;
+}
+.logo ._4 {
+  -webkit-transform: translate(-50%, -50%) translateX(300%) scale(1);
+          transform: translate(-50%, -50%) translateX(300%) scale(1);
+  color: #0f9d58;
+  -webkit-animation-name: listening, user-speaks_4, to_thinking, thinking;
+          animation-name: listening, user-speaks_4, to_thinking, thinking;
+}
+
+.grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+.grid .col {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  -webkit-transform: scaleY(1.5);
+          transform: scaleY(1.5);
+  background: #ddd;
+}
+.grid .col.__0 {
+  left: 0%;
+}
+.grid .col.__1 {
+  left: 11.11111%;
+}
+.grid .col.__2 {
+  left: 22.22222%;
+}
+.grid .col.__3 {
+  left: 33.33333%;
+}
+.grid .col.__4 {
+  left: 44.44444%;
+}
+.grid .col.__5 {
+  left: 55.55556%;
+}
+.grid .col.__6 {
+  left: 66.66667%;
+}
+.grid .col.__7 {
+  left: 77.77778%;
+}
+.grid .col.__8 {
+  left: 88.88889%;
+}
+.grid .col.__9 {
+  left: 100%;
+}
+.grid .row {
+  position: absolute;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  -webkit-transform: scaleX(1.5);
+          transform: scaleX(1.5);
+  background: #ddd;
+}
+.grid .row.__0 {
+  top: 0%;
+}
+.grid .row.__1 {
+  top: 11.11111%;
+}
+.grid .row.__2 {
+  top: 22.22222%;
+}
+.grid .row.__3 {
+  top: 33.33333%;
+}
+.grid .row.__4 {
+  top: 44.44444%;
+}
+.grid .row.__5 {
+  top: 55.55556%;
+}
+.grid .row.__6 {
+  top: 66.66667%;
+}
+.grid .row.__7 {
+  top: 77.77778%;
+}
+.grid .row.__8 {
+  top: 88.88889%;
+}
+.grid .row.__9 {
+  top: 100%;
+}
+
+@-webkit-keyframes listening {
+  0% {
+    top: 50%;
+    -webkit-animation-timing-function: ease-in;
+            animation-timing-function: ease-in;
+  }
+  33% {
+    top: 45%;
+    -webkit-animation-timing-function: linear;
+            animation-timing-function: linear;
+  }
+  66% {
+    top: 55%;
+    -webkit-animation-timing-function: linear;
+            animation-timing-function: linear;
+  }
+  100% {
+    top: 50%;
+    -webkit-animation-timing-function: ease-out;
+            animation-timing-function: ease-out;
+  }
+}
+
+@keyframes listening {
+  0% {
+    top: 50%;
+    -webkit-animation-timing-function: ease-in;
+            animation-timing-function: ease-in;
+  }
+  33% {
+    top: 45%;
+    -webkit-animation-timing-function: linear;
+            animation-timing-function: linear;
+  }
+  66% {
+    top: 55%;
+    -webkit-animation-timing-function: linear;
+            animation-timing-function: linear;
+  }
+  100% {
+    top: 50%;
+    -webkit-animation-timing-function: ease-out;
+            animation-timing-function: ease-out;
+  }
+}
+@-webkit-keyframes user-speaks_1 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 166.66667px;
+  }
+  33% {
+    height: 100px;
+  }
+  50% {
+    height: 133.33333px;
+  }
+  66% {
+    height: 100px;
+  }
+  84% {
+    height: 66.66667px;
+  }
+}
+@keyframes user-speaks_1 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 166.66667px;
+  }
+  33% {
+    height: 100px;
+  }
+  50% {
+    height: 133.33333px;
+  }
+  66% {
+    height: 100px;
+  }
+  84% {
+    height: 66.66667px;
+  }
+}
+@-webkit-keyframes user-speaks_2 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 100px;
+  }
+  33% {
+    height: 66.66667px;
+  }
+  50% {
+    height: 100px;
+  }
+  66% {
+    height: 66.66667px;
+  }
+  84% {
+    height: 50px;
+  }
+}
+@keyframes user-speaks_2 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 100px;
+  }
+  33% {
+    height: 66.66667px;
+  }
+  50% {
+    height: 100px;
+  }
+  66% {
+    height: 66.66667px;
+  }
+  84% {
+    height: 50px;
+  }
+}
+@-webkit-keyframes user-speaks_3 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 166.66667px;
+  }
+  33% {
+    height: 133.33333px;
+  }
+  50% {
+    height: 166.66667px;
+  }
+  66% {
+    height: 100px;
+  }
+  84% {
+    height: 66.66667px;
+  }
+}
+@keyframes user-speaks_3 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 166.66667px;
+  }
+  33% {
+    height: 133.33333px;
+  }
+  50% {
+    height: 166.66667px;
+  }
+  66% {
+    height: 100px;
+  }
+  84% {
+    height: 66.66667px;
+  }
+}
+@-webkit-keyframes user-speaks_4 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 100px;
+  }
+  33% {
+    height: 66.66667px;
+  }
+  50% {
+    height: 100px;
+  }
+  66% {
+    height: 66.66667px;
+  }
+  84% {
+    height: 50px;
+  }
+}
+@keyframes user-speaks_4 {
+  0%, 100% {
+    height: 33.33333px;
+  }
+  16% {
+    height: 100px;
+  }
+  33% {
+    height: 66.66667px;
+  }
+  50% {
+    height: 100px;
+  }
+  66% {
+    height: 66.66667px;
+  }
+  84% {
+    height: 50px;
+  }
+}
+@-webkit-keyframes to_thinking {
+  to {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+}
+@keyframes to_thinking {
+  to {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+}
+@-webkit-keyframes to_replying_1 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(90deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(90deg) translate(200%, 0);
+  }
+}
+@keyframes to_replying_1 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(90deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(90deg) translate(200%, 0);
+  }
+}
+@-webkit-keyframes to_replying_2 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(180deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(180deg) translate(200%, 0);
+  }
+}
+@keyframes to_replying_2 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(180deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(180deg) translate(200%, 0);
+  }
+}
+@-webkit-keyframes to_replying_3 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(270deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(270deg) translate(200%, 0);
+  }
+}
+@keyframes to_replying_3 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(270deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(270deg) translate(200%, 0);
+  }
+}
+@-webkit-keyframes to_replying_4 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+  }
+}
+@keyframes to_replying_4 {
+  from {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  to {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+  }
+}
+@-webkit-keyframes thinking {
+  0% {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  20% {
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(45deg) translate(200%, 0);
+  }
+  40% {
+    -webkit-transform: translate(-50%, -50%) rotate(135deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(135deg) translate(200%, 0);
+  }
+  60% {
+    -webkit-transform: translate(-50%, -50%) rotate(225deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(225deg) translate(200%, 0);
+  }
+  80% {
+    -webkit-transform: translate(-50%, -50%) rotate(315deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(315deg) translate(200%, 0);
+  }
+  100% {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+  }
+}
+@keyframes thinking {
+  0% {
+    -webkit-transform: translate(-50%, -50%) translate(200%, 0);
+            transform: translate(-50%, -50%) translate(200%, 0);
+  }
+  20% {
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(45deg) translate(200%, 0);
+  }
+  40% {
+    -webkit-transform: translate(-50%, -50%) rotate(135deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(135deg) translate(200%, 0);
+  }
+  60% {
+    -webkit-transform: translate(-50%, -50%) rotate(225deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(225deg) translate(200%, 0);
+  }
+  80% {
+    -webkit-transform: translate(-50%, -50%) rotate(315deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(315deg) translate(200%, 0);
+  }
+  100% {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+            transform: translate(-50%, -50%) rotate(360deg) translate(200%, 0);
+  }
+}
+ </style>
+
+    <div id="micContainer" class$="mic-container {{_onAir}}" on-tap="_toggle">
+      <div class="ring"></div>
+      <div class="ring2"></div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24" height="100%" width="100%" preserveAspectRatio="xMidYMid meet">
+          <g>
+   
+   <path d="M12,14c1.7,0,3-1.3,3-3l0-6c0-1.7-1.3-3-3-3c-1.7,0-3,1.3-3,3v6C9,12.7,10.3,14,12,14z M17.3,11c0,3-2.5,5.1-5.3,5.1c-2.8,0-5.3-2.1-5.3-5.1H5c0,3.4,2.7,6.2,6,6.7V21h2v-3.3c3.3-0.5,6-3.3,6-6.7H17.3z"></path>
+          </g>
+          
+        </svg>
+      </div>
+    </div>
+</div>
+
+  </template>
+
+  <script>
+
+
+    Polymer({
+
+      is: 'speech-mic',
+      properties: {
+        /**
+         * 语言文字识别
+         *
+         *从Chrome的51 +支持的语言:
+         *
+         * 'af-ZA', 'id-ID', 'ms-MY', 'ca-ES', 'cs-CZ', 'de-DE', 'en-US', 'en-AU', 'en-CA', 'en-IN', 'en-NZ', 'en-ZA', 'en-GB', 'es-AR', 'es-BO', 'es-CL', 'es-CO', 'es-CR', 'es-EC', 'es-SV', 'es-ES', 'es-US', 'es-GT', 'es-HN', 'es-MX', 'es-NI', 'es-PA', 'es-PY', 'es-PE', 'es-PR', 'es-DO', 'es-UY', 'es-VE', 'eu-ES', 'fr-FR', 'gl-ES', 'hr_HR', 'zu-ZA', 'is-IS', 'it-IT', 'it-CH', 'hu-HU', 'nl-NL', 'nb-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ro-RO', 'sk-SK', 'fi-FI', 'sv-SE', 'tr-TR', 'bg-BG', 'ru-RU', 'sr-RS', 'ko-KR', 'zh-cmn-Hans-CN', 'cmn-Hans-CN', 'cmn-Hans-HK', 'cmn-Hant-TW', 'yue-Hant-HK', 'ja-JP', 'la'
+         *
+         */
+        language:{
+          type:String,
+          value:"zh-CN"
+        },
+        /**
+         * 指示文本识别是否为活动
+         */
+        recognizing:{
+          type:Boolean,
+          readOnly:true,
+          notify:true,
+          value:false
+        },
+        /**
+         * 一个记录的总识别文本.
+         */
+        completeTranscript:{
+          type:String,
+          readOnly:true,
+          notify:true
+        },
+        /**
+         *识别单词/句子
+         */
+        transcript:{
+          type:String,
+          readOnly:true,
+          notify:true
+        },
+        /**
+         *停止识别单词/句子后记录
+         */
+        continuous:{
+          type:Boolean,
+          value:false
+        },
+        _onAir:{
+          type:String,
+          computed: '_isRecognizing(recognizing)'
+        }
+      },
+
+      created: function () {
+        var SpeechRecognition = window.SpeechRecognition ||
+                window.webkitSpeechRecognition ||
+                window.mozSpeechRecognition ||
+                window.msSpeechRecognition ||
+                window.oSpeechRecognition;
+
+        if (SpeechRecognition !== undefined) {
+          this.recognition = new SpeechRecognition();
+        }
+        else {
+          console.error('Your browser does not support the Web Speech API');
+        }
+      },
+      ready: function () {
+        this.recognition.continuous = this.continuous;
+
+        this.recognition.interimResults = true;
+        this.recognition.lang = this.language;
+        //没有中间结果
+        this.recognition.interimResults = false;
+        this.recognition.onstart = this.start.bind(this);
+        this.recognition.onend = this._end.bind(this);
+        this.recognition.onresult = this._result.bind(this);
+        this.recognition.onerror = this.error.bind(this);
+
+      },
+
+
+
+
+      start: function(e) {
+        this._setRecognizing(true);
+      },
+
+      _end: function() {
+        this._setRecognizing(false);
+      },
+
+      stop: function() {
+        this.recognition && this.recognition.stop();
+      },
+
+      _result: function(e) {
+
+        var t, ct = '', isFinal;
+        for (var i = 0, r; r = e.results[i]; i++) {
+          t = r[0] && r[0].transcript || '';
+          ct += t;
+          isFinal = r.isFinal;
+        }
+        this._setTranscript(t);
+        this._setCompleteTranscript(ct);
+
+        this.fire('speech-mic-result', {
+          results: e.results,
+          transcript: t,
+          completeTranscript: ct,
+          isFinal: isFinal
+        });
+      },
+
+      error: function(e) {
+        console.log(e);
+      },
+
+      _toggle: function () {
+        if(!this.recognizing){
+          this.recognition.start();
+        }else{
+          this.recognition.stop();
+        }
+
+      },
+      _isRecognizing:function () {
+        return this.recognizing ? 'recognizing' :'';
+      }
+
+    });
+  </script>
+</dom-module>
