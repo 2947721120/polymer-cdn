@@ -1,0 +1,242 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-behaviors/iron-button-state.html">
+<link rel="import" href="../iron-behaviors/iron-control-state.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+
+<!--
+`bottom-tab`是用于导航底部导航页面的选项卡元素。 铁图标
+可用于将标志分配给选项卡。 也可以使用可选的标签
+澄清标签的意思.
+
+     <bottom-nav>
+       <bottom-toolbar selected="0">
+         <bottom-tab label="Home" icon="icons:home"></bottom-tab>
+         <bottom-tab label="Favorites" icon="icons:favorite"></bottom-tab>
+         <bottom-tab label="Recent" icon="icons:clock"></bottom-tab>
+       </bottom-toolbar>
+     </bottom-nav>
+
+## 造型
+
+Mixin | 说明| 默认
+------|-------------|----------
+`--bottom-tab` | Mixin应用于标签 | `{}`
+`--bottom-tab-content` | Mixin应用于标签内容 | `{}`
+`--bottom-tab-content-unselected` | 当选项卡未选择时，Mixin应用于选项卡内容 | `{}`
+
+     @demo demo/index.html
+ -->
+
+<dom-module id="bottom-tab">
+  <template>
+    <style>
+     :host {
+       @apply(--layout-inline);
+       @apply(--layout-center);
+       @apply(--layout-center-justified);
+       @apply(--layout-flex-auto);
+
+       position: relative;
+       padding: 0 12px;
+       overflow: hidden;
+       cursor: pointer;
+       vertical-align: middle;
+
+       @apply(--paper-font-common-base);
+       @apply(--bottom-tab);
+     }
+
+     :host(:focus) {
+       outline: none;
+     }
+
+     :host([link]) {
+       padding: 0;
+     }
+
+     .tab-content {
+       height: 100%;
+       transform: translateZ(0);
+       -webkit-transform: translateZ(0);
+       padding-bottom: 10px;
+       @apply(--layout-vertical);
+       @apply(--layout-center-center);
+       @apply(--bottom-tab-content);
+     }
+
+     :host(:not(.iron-selected)) {
+       transition: width .15s cubic-bezier(0.4, 0.0, 1, 1);
+       width: 2em;
+     }
+
+     :host(:not(.iron-selected)) .tab-content {
+       opacity: 0.8;
+       padding-top: 8px;
+
+       @apply(--bottom-tab-content-unselected);
+     }
+
+     :host(:not(.iron-selected)) :not([show]).label {
+       display: none;
+     }
+
+     :host(:not(.iron-selected)) .label {
+       font-size: 12px;
+       transition: font-size .1s ease-in;
+     }
+
+     :host(:focus) .tab-content {
+       opacity: 1;
+     }
+
+     .tab-content > ::content > a {
+       height: 100%;
+       width: 2em;
+     }
+
+     :host(.iron-selected:not([show-label])) {
+       width: 3.5em;
+     }
+
+     :host(.iron-selected) {
+       width: 2em;
+     }
+
+     :host(.iron-selected) > .tab-content {
+       font-size: 14px;
+       font-weight: normal;
+       padding-top: 6px;
+       transition: padding-top .1s ease-in;
+
+       @apply(--bottom-tab-content-selected);
+     }
+    </style>
+
+    <div class="tab-content">
+      <iron-icon icon="[[icon]]"></iron-icon>
+      <span show$="[[showLabel]]" class="label">[[label]]</span>
+      <content></content>
+    </div>
+  </template>
+
+  <script>
+   Polymer({
+     is: 'bottom-tab',
+
+     behaviors: [
+       Polymer.IronControlState,
+       Polymer.IronButtonState
+     ],
+
+     properties: {
+
+       /**
+        * If true, 该选项卡将转发键盘点击（输入/空格）
+         *在其后代中找到的第一个锚点元素
+        */
+       link: {
+         type: Boolean,
+         value: false,
+         reflectToAttribute: true
+       },
+
+       /**
+        * 不活动时隐藏的标签的标签。
+        */
+       label: String,
+
+       /**
+        * 标签是否应该显示或隐藏，默认隐藏
+        */
+       showLabel: {
+         type: Boolean,
+         value: false
+       },
+
+       /**
+        * 要显示的图标的名称
+        */
+       icon: String,
+
+       /**
+        *选择选项卡时，附加到父元素的CSS类
+        */
+       selectedClass: String
+     },
+
+     hostAttributes: {
+       role: 'tab'
+     },
+
+     listeners: {
+       down: '_updateNoink',
+       tap: '_onTap'
+     },
+
+     attached: function() {
+       this._updateNoink();
+     },
+
+     get _parentNoink () {
+       var parent = Polymer.dom(this).parentNode;
+       return !!parent && !!parent.noink;
+     },
+
+     _updateNoink: function() {
+       this.noink = !!this.noink || !!this._parentNoink;
+     },
+
+     /**
+      * 选择当前选项卡时返回true
+      */
+     _isSelected: function() {
+       return Polymer.dom(this).node.hasAttribute('aria-selected');
+     },
+
+     /**
+      * 触发一个事件来更新父元素的CSS类。
+      */
+     _updateClass: function() {
+       details = {className: this.selectedClass};
+       this.fire('bottom-tab-update-class', details);
+     },
+
+     /**
+      * 选择选项卡时，触发波纹事件
+      * @param {Event} event
+      */
+     _activateRipple: function(event) {
+       if (!this._isSelected() && !this.noink) {
+         var x = event.detail.x,
+             y = event.detail.y,
+             details = {x: x, y: y};
+
+         this.fire('bottom-tab-ripple', details);
+         this._updateClass();
+       }
+     },
+
+     _onTap: function(event) {
+       if (this.link) {
+         var anchor = this.queryEffectiveChildren('a');
+
+         if (!anchor) {
+           return;
+         }
+
+         //不要停留在循环委托中
+          //来自子锚的侦听器
+         if (event.target === anchor) {
+           return;
+         }
+
+         anchor.click();
+       }
+
+       this._activateRipple(event);
+     }
+
+   });
+  </script>
+</dom-module>

@@ -1,0 +1,366 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-menu-behavior/iron-menubar-behavior.html">
+<link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-tabs/paper-tab.html">
+
+<!--
+`bottom-toolbar` 是一个类似于用于导航的纸张标签的选项卡列表
+`bottom-nav`标签。 所选的 `bottom-tab` 选项卡将被升高并具有
+比其他标签更浅的颜色.
+
+使用`selected`属性获取或设置所选标签.
+
+```html
+<bottom-nav>
+  <bottom-toolbar selected="0">
+    <bottom-tab icon="icons:home"></bottom-tab>
+    <bottom-tab icon="icons:menu"></bottom-tab>
+    <bottom-tab icon="icons:close"></bottom-tab>
+    <bottom-tab icon="icons:chevron-right"></bottom-tab>
+  </bottom-toolbar>
+</bottom-nav>
+```
+
+### 造型
+
+以下自定义属性和混合可用于样式:
+
+自定义属性| 说明| 默认
+----------------|-------------|----------
+`--bottom-toolbar` | Mixin applied to the tabs | `{}`
+`--bottom-toolbar-content` | Mixin applied to the content container of tabs | `{}`
+`--bottom-toolbar-container` | Mixin applied to the layout container of tabs | `{}`
+
+     @demo demo/index.html
+   -->
+
+<dom-module id="bottom-toolbar">
+  <template>
+    <style>
+      :host {
+        @apply(--layout);
+        @apply(--layout-center);
+
+        height: 64px;
+        font-size: 14px;
+        font-weight: normal;
+        overflow: hidden;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
+
+        /* NOTE: Both values are needed, since some phones require the value to be `transparent`. */
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        -webkit-tap-highlight-color: transparent;
+
+        @apply(--bottom-toolbar);
+      }
+
+      :host-context([dir=rtl]) {
+        @apply(--layout-horizontal-reverse);
+      }
+
+      #tabsContainer {
+        position: relative;
+        height: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        @apply(--layout-flex-auto);
+        @apply(--bottom-toolbar-container);
+      }
+
+      #tabsContent {
+        height: 100%;
+        @apply(--bottom-toolbar-content);
+      }
+
+     #tabsContent {
+        @apply(--layout-horizontal);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .not-visible {
+        opacity: 0;
+        cursor: default;
+      }
+
+    </style>
+
+    <div id="tabsContainer" on-down="_down">
+      <div id="tabsContent">
+        <paper-ripple id="ripple" noink></paper-ripple>
+        <content select="*"></content>
+      </div>
+    </div>
+
+  </template>
+
+  <script>
+   Polymer({
+     is: 'bottom-toolbar',
+      behaviors: [
+        Polymer.IronResizableBehavior,
+        Polymer.IronMenubarBehavior
+      ],
+
+      properties: {
+        /**
+         * If true, 墨水纹波效应被禁用。 当此属性更改时，
+          *所有后代`<bottom-toolbar>`元素都有它们的“noink”属性
+          *也改为新的价值.
+         */
+        noink: {
+          type: Boolean,
+          value: false,
+          observer: '_noinkChanged'
+        },
+
+        selectable: {
+          type: String,
+          value: 'bottom-tab'
+        },
+
+        /**
+         * If true,使用该选项卡进行聚焦时自动选择选项卡
+          *键盘.
+         */
+        autoselect: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         *用户停止交互时的延迟（以毫秒为单位）
+          *通过键盘和聚焦项目时的标签
+          *自动选择 (if `autoselect` is true).
+         */
+        autoselectDelay: {
+          type: Number,
+          value: 0
+        },
+
+        _previousTab: {
+          type: Object
+        },
+
+        /**
+         * 自定义CSS类继承自“bottom-tab”子对象的selectedClass
+          *元素.
+         */
+        _selectedClass: String
+      },
+
+      hostAttributes: {
+        role: 'tablist'
+      },
+
+      listeners: {
+        'iron-resize': '_onTabSizingChanged',
+        'iron-items-changed': '_onTabSizingChanged',
+        'iron-select': '_onIronSelect',
+        'iron-deselect': '_onIronDeselect',
+        'bottom-tab-ripple': '_downAction',
+        'bottom-tab-update-class': '_selectClass'
+      },
+
+      keyBindings: {
+        'left:keyup right:keyup': '_onArrowKeyup'
+      },
+
+      created: function() {
+        this._holdJob = null;
+        this._pendingActivationItem = undefined;
+        this._pendingActivationTimeout = undefined;
+        this._bindDelayedActivationHandler = this._delayedActivationHandler.bind(this);
+        this.addEventListener('blur', this._onBlurCapture.bind(this), true);
+      },
+
+      ready: function() {
+        this.setScrollDirection('y', this.$.tabsContainer);
+      },
+
+     // NOTE: _fixedChanged 只在启动时被调用.
+     attached: function() {
+       this._fixedChanged();
+
+       // 使用所选项目的类初始化工具栏
+       var selected = this.items[this.selected];
+       if (selected) {
+         var newClass = selected.getAttribute('selected-class');
+         if (newClass)
+           this._updateClass(newClass)
+       }
+     },
+
+      detached: function() {
+        this._cancelPendingActivation();
+      },
+
+     /**
+      * @param {Event} event
+      */
+     _selectClass: function(event) {
+       var newClass = event.detail.className,
+           oldClass = this._selectedClass;
+
+       if (newClass && newClass != oldClass)
+         this._updateClass(newClass);
+     },
+
+     /**
+      * 在工具栏上交换一个旧的CSS类
+      * @param {string} newClass 要附加的新CSS类
+      */
+     _updateClass: function(newClass) {
+       Polymer.dom(this).classList.remove(this._selectedClass);
+       this._selectedClass = newClass;
+       Polymer.dom(this).classList.add(this._selectedClass);
+     },
+
+     _downAction: function(event) {
+       var x = event.detail.x,
+           y = event.detail.y;
+       this.$.ripple.downAction({detail: {x: x, y: y}});
+
+       this._upAction();
+     },
+
+     _upAction: function() {
+       this.$.ripple.upAction();
+     },
+
+     /**
+      * @param {string=} val
+      */
+     _noinkChanged: function(val) {
+       this._updateAttribute('noink', val);
+     },
+
+     _fixedChanged: function() {
+       var isFixed = Polymer.dom(this).parentNode.fixed;
+       this._updateAttribute('fixed', isFixed);
+     },
+
+     /**
+      * @param {string} prop
+      * @param {string=} val
+      */
+     _updateAttribute: function(prop, val) {
+       var childTabs = Polymer.dom(this).querySelectorAll('bottom-tab');
+       childTabs.forEach(function(element) {
+         val ? this._setAttribute(element, prop) : this._removeAttribute(element, prop);
+       }.bind(this));
+     },
+
+     /**
+      * @param {HTMLElement} element
+      * @param {string} prop
+      */
+      _setAttribute: function(element, prop) {
+        element.setAttribute(prop, '');
+      },
+
+     /**
+      * @param {HTMLElement} element
+      * @param {string} prop
+      */
+      _removeAttribute: function(element, prop) {
+        element.removeAttribute(prop);
+      },
+
+      //TODO（cdata）：当手势着陆时，添加“track”响应.
+
+      _onTabSizingChanged: function() {
+        this.debounce('_onTabSizingChanged', function() {
+        }, 10);
+      },
+
+      _onIronSelect: function(event) {
+        this._previousTab = event.detail.item;
+        this.cancelDebouncer('tab-changed');
+      },
+
+      _onIronDeselect: function(event) {
+        this.debounce('tab-changed', function() {
+          this._tabChanged(null, this._previousTab);
+          this._previousTab = null;
+          // See polymer/polymer#1305
+        }, 1);
+      },
+
+      _activateHandler: function() {
+       //取消任何其他键盘事件调度的项目激活
+         //动作导致项目被激活（例如点击）。
+        this._cancelPendingActivation();
+        Polymer.IronMenuBehaviorImpl._activateHandler.apply(this, arguments);
+      },
+
+      /**
+       * 延迟后激活一个项目（以毫秒为单位）。
+       */
+      _scheduleActivation: function(item, delay) {
+        this._pendingActivationItem = item;
+        this._pendingActivationTimeout = this.async(
+          this._bindDelayedActivationHandler, delay);
+      },
+
+      /**
+       * 激活最后一个项目 `_scheduleActivation`.
+       */
+      _delayedActivationHandler: function() {
+        var item = this._pendingActivationItem;
+        this._pendingActivationItem = undefined;
+        this._pendingActivationTimeout = undefined;
+        item.fire(this.activateEvent, null, {
+          bubbles: true,
+          cancelable: true
+        });
+      },
+
+      /**
+       *取消以前计划的项目激活
+       * `_scheduleActivation`.
+       */
+      _cancelPendingActivation: function() {
+        if (this._pendingActivationTimeout !== undefined) {
+          this.cancelAsync(this._pendingActivationTimeout);
+          this._pendingActivationItem = undefined;
+          this._pendingActivationTimeout = undefined;
+        }
+      },
+
+      _onArrowKeyup: function(event) {
+        if (this.autoselect) {
+          this._scheduleActivation(this.focusedItem, this.autoselectDelay);
+        }
+      },
+
+      _onBlurCapture: function(event) {
+      //取消预定的项目激活（如果有的话）
+         //模糊
+        if (event.target === this._pendingActivationItem) {
+          this._cancelPendingActivation();
+        }
+      },
+
+      _down: function(e) {
+       //去击败异步，击败IronMenuBehavior
+         // autorefocus-on-no-selection超时
+        this.async(function() {
+          if (this._defaultFocusAsync) {
+            this.cancelAsync(this._defaultFocusAsync);
+            this._defaultFocusAsync = null;
+          }
+        }, 1);
+      }
+
+   });
+  </script>
+</dom-module>
